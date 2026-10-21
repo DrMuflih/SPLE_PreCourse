@@ -30,6 +30,8 @@ header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;backgroun
 .bar-in{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:10px}
 .brand{font:700 20px var(--display);letter-spacing:.2px;margin-right:auto}
 .brand small{font:500 12px var(--mono);color:var(--hi);letter-spacing:.1em;margin-left:8px;text-transform:uppercase}
+.who{display:flex;align-items:center;gap:8px;font:600 14px var(--body);color:var(--navy-ink);white-space:nowrap}
+.who .av{width:30px;height:30px;border-radius:50%;background:var(--hi);color:var(--hi-ink);display:flex;align-items:center;justify-content:center;font:600 12.5px var(--mono)}
 .plan6{font:500 12.5px var(--mono);background:var(--hi);color:var(--hi-ink);padding:5px 10px;border-radius:999px;white-space:nowrap}
 .bar button{font:500 13px var(--body);color:var(--navy-ink);background:transparent;border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 11px;cursor:pointer}
 .bar button:hover{border-color:var(--hi)}
@@ -89,6 +91,8 @@ input:disabled{background:var(--sunk);opacity:.6}
 .mod .n{font-size:13.5px;line-height:1.3}
 .mod.done{border-color:var(--good)} .mod.done .c::after{content:" · done";color:var(--good)}
 .mod.cur{outline:2px solid var(--gold)}
+button.mod.jump{font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+button.mod.jump:hover{border-color:var(--navy);background:var(--sunk)}
 .q{display:flex;flex-direction:column;gap:12px}
 .stem{font-size:16.5px;line-height:1.5;max-width:75ch}
 .opts{display:flex;flex-direction:column;gap:8px}
@@ -166,6 +170,7 @@ a.video{text-decoration:none}a.video:hover .play{transform:scale(1.06)}
   <button type="button" id="btnFaculty">Book a faculty appointment</button>
   <button type="button" id="btnDev" aria-pressed="true">Developer notes</button>
   <button type="button" id="btnRestart">Restart</button>
+  <span class="who" id="who" hidden></span>
 </div></header>
 <nav class="steps gutter" aria-label="Progress"><ol id="steps"></ol></nav>
 <main class="gutter" id="view"></main>
@@ -264,7 +269,7 @@ let S;
 function fresh(){return{step:0,screen:'plans',err:'',diag:{i:0,ans:{}},path:null,order:[],cur:0,done:{},assess:{},mod:{tab:'learn',pick:null,checked:false,retry:false},mock:{i:0,ans:{},flag:{},submitted:false,secs:120*60},chat:[
  {who:'Noura · Batch 2026',t:'Anyone doing B3 this week? The HF drug table in the notes helped me a lot.'},
  {who:'Faisal · Intern',t:'Calculations in B2 are my weak area. The worked examples are good, then retry the items.'},
- {who:'Moderator',t:'Reminder: no sharing of real exam questions. Discuss concepts only.'}],faculty:null,book:{day:null,time:null}}}
+ {who:'Moderator',t:'Reminder: no sharing of real exam questions. Discuss concepts only.'}],faculty:null,book:{day:null,time:null},name:''}}
 S=fresh();
 const $=s=>document.querySelector(s);
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -280,7 +285,7 @@ function vPlans(){return`
 <h1>Pick a plan for your 6-month SPLE preparation</h1>
 <p class="lead">Every plan starts with the free mini diagnostic. In this simulation only Premium can be selected.</p>
 <div class="grid3">
- ${tier('Basic','SAR 259',['Question bank by module','Explanations for every option','Mini diagnostic'],false)}
+ ${tier('Basic','SAR 250',['Question bank by module','Explanations for every option','Mini diagnostic'],false)}
  ${tier('Standard','SAR 350',['Everything in Basic','Microlectures and notes','Progress analytics'],false)}
  ${tier('Premium','SAR 500',['Everything in Standard','Personal study plan','Mock SPLE and readiness score','Community chat and faculty help'],true)}
 </div>
@@ -349,16 +354,29 @@ function vLogin(){return`
 </div>
 <div class="card">
  <form id="loginForm" class="q" novalidate>
-  <div class="field"><label for="user">Username</label><input id="user" autocomplete="username"></div>
-  <div class="field"><label for="pass">Password</label><input id="pass" type="password" autocomplete="current-password"></div>
+  <div class="field"><label for="user">Username</label><input id="user" autocomplete="username" autocapitalize="none" spellcheck="false" value="${esc(S.u||'')}"></div>
+  <div class="field"><label for="pass">Password</label><input id="pass" type="password" autocomplete="current-password" autocapitalize="none" value="${esc(S.pw||'')}"></div>
   ${S.err?`<p class="err" role="alert">${esc(S.err)}</p>`:''}
-  <button class="btn" type="submit">Sign in</button>
+  <button class="btn" type="button" data-act="doLogin">Sign in</button>
+  <button class="btn ghost" type="button" data-act="demoLogin">Sign in with the demo account</button>
   <p class="hint">Demo account: IAU_SPLE / IAU_2026</p>
  </form>
 </div>
 </div>
 ${dev(['Accounts: IAU single sign-on or own login, password reset, email/OTP','Data protection (PDPL): where student data is stored and who can see it'])}`}
 
+const SCHOOLS=['IAU College of Clinical Pharmacy','King Saud University','King Abdulaziz University','Princess Nourah bint Abdulrahman University','King Khalid University','Qassim University','Umm Al-Qura University','Other'];
+function vProfile(){return`
+<div class="eyebrow">Step 3 · Your profile</div>
+<h1>Welcome. Tell us about you</h1>
+<div class="card" style="max-width:520px">
+ <div class="field"><label for="fullname">Your name</label><input id="fullname" autocomplete="name" placeholder="e.g. Sara Ahmed" value="${esc(S.name||'')}"></div>
+ <div class="field"><label for="school">Your pharmacy school</label><select id="school">${SCHOOLS.map(x=>`<option ${S.school===x?'selected':''}>${x}</option>`).join('')}</select></div>
+ <div class="field" id="otherWrap" hidden><label for="schoolOther">School name</label><input id="schoolOther"></div>
+ ${S.err?`<p class="err" role="alert">${esc(S.err)}</p>`:''}
+ <div class="row"><button class="btn gold" type="button" data-act="saveProfile">Continue</button><button class="btn ghost" type="button" data-act="skipProfile">Skip for now</button></div>
+</div>
+${dev(['Student profile: name, school, graduation year','School field supports institutional licences and per-school reports'])}`}
 function vOverview(){return`
 <div class="eyebrow">Step 4 · Course overview</div>
 <h1>Welcome. Here is what you are preparing for</h1>
@@ -384,7 +402,7 @@ function vOverview(){return`
 <div class="card"><div class="row"><h2>Blueprint · B0 to N8</h2><span class="spacer"></span><span class="pill gold">Gate 1: B0–B2</span></div>${bp()}</div>
 <div class="row"><span class="spacer"></span><button class="btn gold" type="button" data-act="startDiag">Start the diagnostic test</button></div>
 ${dev(['Orientation video production and hosting','Blueprint map: every item and video tagged with module and domain codes'])}`}
-function bp(cur){return`<div class="bp">${MODS.map(m=>`<div class="mod ${m.t==='gate'?'gate':''} ${m.t==='ns'?'ns':''} ${S.done[m.c]?'done':''} ${m.c===cur?'cur':''}"><span class="c">${m.c} · ${m.h?m.h+' h':'start'}</span><span class="n">${m.n}</span></div>`).join('')}</div><p class="hint">Foundation & therapeutic B0–B14: 80 h · Basic & non-therapeutic N1–N8: 42 h</p>`}
+function bp(cur){return`<div class="bp">${MODS.map(m=>{const cls=`mod ${m.t==='gate'?'gate':''} ${m.t==='ns'?'ns':''} ${S.done[m.c]?'done':''} ${m.c===cur?'cur':''}`,inner=`<span class="c">${m.c} · ${m.h?m.h+' h':'start'}</span><span class="n">${m.n}</span>`;return cur&&S.order.includes(m.c)?`<button type="button" class="${cls} jump" data-act="jumpMod" data-c="${m.c}" aria-label="Open ${m.c} ${m.n}" ${m.c===cur?'aria-current="true"':''}>${inner}</button>`:`<div class="${cls}">${inner}</div>`}).join('')}</div><p class="hint">${cur?'Click any module to open it · ':''}Foundation & therapeutic B0–B14: 80 h · Basic & non-therapeutic N1–N8: 42 h</p>`}
 
 function qHTML(it,pick,checked,name){return`<div class="q"><p class="stem">${esc(it.s)}</p><div class="opts" role="radiogroup" aria-label="Answer options">${it.o.map((o,i)=>{let c='';if(checked){if(i===it.a)c='right';else if(i===pick)c='wrong'}else if(i===pick)c='sel';return`<button type="button" class="opt ${c}" role="radio" aria-checked="${i===pick}" data-act="${name}" data-i="${i}" ${checked?'disabled':''}><span class="k">${L[i]}</span><span>${esc(o)}</span></button>`}).join('')}</div></div>`}
 
@@ -429,7 +447,7 @@ if(t==='bank'||t==='assess'){const it=t==='bank'?pr:as,ok=S.mod.pick===it.a;
 return`
 <div class="eyebrow">Step 7 · Modules · ${S.path==='custom'?'Customised plan':'Regular flow'} · module ${S.cur+1} of ${S.order.length}</div>
 <h1>${c} · ${m.n}</h1>
-<div class="row"><div class="tabs" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" aria-selected="${t===k}" class="${(k==='bank'&&S.mod.bankOk)||(k==='assess'&&S.assess[c]!=null)?'ok':''}" data-act="tab" data-t="${k}">${l}</button>`).join('')}</div><span class="spacer"></span><button class="btn ghost" type="button" data-act="skipToMock">Skip to mock exam (simulation)</button></div>
+<div class="row"><div class="tabs" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" aria-selected="${t===k}" class="${(k==='bank'&&S.mod.bankOk)||(k==='assess'&&S.assess[c]!=null)?'ok':''}" data-act="tab" data-t="${k}">${l}</button>`).join('')}</div><span class="spacer"></span>${S.cur>0?`<button class="btn ghost" type="button" data-act="prevMod">← Back to ${S.order[S.cur-1]}</button>`:''}<button class="btn ghost" type="button" data-act="skipToMock">Skip to mock exam (simulation)</button></div>
 <div class="card">${body}</div>
 <div class="grid2"><div class="card"><h3>Your 6-month plan</h3><div class="plan">${weekPlan()}</div></div><div class="card"><h3>Blueprint progress</h3>${bp(c)}</div></div>
 ${dev(['Microlecture production (per video) and video hosting/streaming',c==='B2'?'Sample lecture here links to YouTube; the real platform needs an embedded player (LMS streaming, Vimeo or unlisted YouTube) and permission to use any third-party video':'Video player and streaming','High-yield notes and drug tables per module','Question bank: 30–80 practice items per module, written and peer reviewed','Mastery items: 20–40 unseen items per module','Link from every item to its review material'])}`}
@@ -471,13 +489,19 @@ ${dev(['Readiness dashboard and scoring rules (weights and thresholds set by the
 /* ---------- Render ---------- */
 function render(){
  $('#steps').innerHTML=STEPS.map((s,i)=>`<li class="${i<S.step?'done':i===S.step?'now':''}">${i+1} ${s}</li>`).join('');
- const v={plans:vPlans,pay:vPay,login:vLogin,overview:vOverview,diag:vDiag,result:vResult,module:vModule,mock:vMock,mockres:vMockResult,ready:vReady}[S.screen];
+ const v={plans:vPlans,pay:vPay,login:vLogin,profile:vProfile,overview:vOverview,diag:vDiag,result:vResult,module:vModule,mock:vMock,mockres:vMockResult,ready:vReady}[S.screen];
  $('#view').innerHTML=v();
+ const who=$('#who'),signed=S.step>=3&&S.name;who.hidden=!signed;if(signed)who.innerHTML=`<span class="av">${esc(S.name.split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase())}</span><span>${esc(S.name)}${S.school?`<br><small style="font-weight:400;opacity:.85">${esc(S.school)}</small>`:''}</span>`;
  $('#plan6').textContent=S.step>=3?`Premium · 6-month plan · Day ${Math.min(1+S.cur*8+(S.step>=7?150:0),180)} of 180`:'6-month preparation plan';
  const f=$('#loginForm');if(f)f.addEventListener('submit',login);
  const cur=document.querySelector('.steps li.now');if(cur)cur.scrollIntoView({block:'nearest',inline:'center'});
 }
-function login(e){e.preventDefault();const u=$('#user').value.trim(),p=$('#pass').value;if(u==='IAU_SPLE'&&p==='IAU_2026'){S.err='';go('overview',3,['Welcome','You are on day 1 of your 6-month plan. Start with the B0 orientation video, then take the diagnostic.'])}else{S.err='Username or password is incorrect. Use the demo account shown below.';render()}}
+const norm=s=>String(s||'').replace(/[٠-٩]/g,d=>d.charCodeAt(0)-0x660).replace(/[۰-۹]/g,d=>d.charCodeAt(0)-0x6F0).replace(/[\s_\-]/g,'').toUpperCase();
+function login(e){if(e)e.preventDefault();tryLogin($('#user').value,$('#pass').value)}
+function tryLogin(u,p){S.u=u.trim();S.pw=p;
+ const uok=norm(u)==='IAUSPLE',pok=norm(p)==='IAU2026';
+ if(uok&&pok){S.err='';S.pw='';go('profile',2,['Signed in','Tell us your name and school so we can personalise your plan.']);return}
+ S.err=!uok&&!pok?'Username and password are both incorrect.':!uok?'Username not recognised. It should be IAU_SPLE.':'Password incorrect. It should be IAU_2026.';render()}
 
 let timerId=null;
 function startTimer(){clearInterval(timerId);timerId=setInterval(()=>{if(S.screen!=='mock'){clearInterval(timerId);return}S.mock.secs=Math.max(0,S.mock.secs-1);const t=$('#timer');if(t)t.textContent=String(Math.floor(S.mock.secs/60)).padStart(2,'0')+':'+String(S.mock.secs%60).padStart(2,'0')},1000)}
@@ -501,6 +525,12 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
    nudge(ok?'Well done':'Remediation',ok?'Correct. Keep the streak going.':'Review the note or video, then try an equivalent item. Stuck twice? Book a faculty appointment.')}
  else if(a==='retry'){S.mod.pick=null;S.mod.checked=false;render()}
  else if(a==='toAssess'){S.mod.tab='assess';S.mod.pick=null;S.mod.checked=false;render();nudge('Mastery check','One unseen item, timed. Aim for 75% across the module.')}
+ else if(a==='demoLogin'){tryLogin('IAU_SPLE','IAU_2026')}
+ else if(a==='doLogin'){login()}
+ else if(a==='saveProfile'){const nm=$('#fullname').value.trim(),sc=$('#school').value,other=($('#schoolOther')||{}).value||'';S.name=nm;S.school=sc==='Other'?other.trim():sc;if(!nm){S.err='Enter your name to continue.';render();return}S.err='';go('overview',3,['Welcome, '+nm.split(/\s+/)[0],'You are on day 1 of your 6-month plan. Start with the B0 orientation video, then take the diagnostic.'])}
+ else if(a==='skipProfile'){S.name=S.name||'Demo Student';S.school=S.school||'IAU College of Clinical Pharmacy';S.err='';go('overview',3,['Welcome','You are on day 1 of your 6-month plan.'])}
+ else if(a==='prevMod'){openModule(S.cur-1)}
+ else if(a==='jumpMod'){const i=S.order.indexOf(b.dataset.c);if(i>-1&&i!==S.cur)openModule(i)}
  else if(a==='nextMod'){const c=S.order[S.cur];S.done[c]=true;if(S.cur<S.order.length-1)openModule(S.cur+1);else startMock()}
  else if(a==='skipToMock'){S.order.forEach(c=>S.done[c]=true);startMock()}
  else if(a==='mockPick'){S.mock.ans[S.mock.i]=+b.dataset.i;render()}
@@ -538,7 +568,8 @@ function drawer(kind){const h=$('#drawerHost');let body,foot='';
 function keepBook(){const t=$('#facTopic'),m=$('#facMod');if(t)S.book.type=t.value;if(m)S.book.mod=m.value}
 function workDays(){const out=[],d=new Date();while(out.length<6){d.setDate(d.getDate()+1);const w=d.getDay();if(w!==5&&w!==6)out.push(d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}))}return out}
 function closeDrawer(){$('#drawerHost').innerHTML=''}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();if(e.key==='Enter'&&e.target.id==='chatIn'){e.preventDefault();document.querySelector('[data-act="chatSend"]').click()}});
+document.addEventListener('change',e=>{if(e.target.id==='school'){const w=$('#otherWrap');if(w)w.hidden=e.target.value!=='Other'}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();if(e.key==='Enter'&&(e.target.id==='user'||e.target.id==='pass')){e.preventDefault();login()}if(e.key==='Enter'&&e.target.id==='fullname'){e.preventDefault();document.querySelector('[data-act="saveProfile"]').click()}if(e.key==='Enter'&&e.target.id==='chatIn'){e.preventDefault();document.querySelector('[data-act="chatSend"]').click()}});
 $('#btnCommunity').onclick=()=>drawer('chat');
 $('#btnFaculty').onclick=()=>drawer('faculty');
 $('#btnDev').onclick=e=>{const on=document.body.classList.toggle('nodev');e.currentTarget.setAttribute('aria-pressed',String(!on))};
